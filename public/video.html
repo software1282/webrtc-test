@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>WebRTC Video Chat</title>
+</head>
+<body>
+    <h2>Video Chat</h2>
+    <video id="localVideo" autoplay playsinline></video>
+    <video id="remoteVideo" autoplay playsinline></video>
+    <button onclick="leaveVideoCall()">Leave</button>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="video.js"></script>
+</body>
+</html>
