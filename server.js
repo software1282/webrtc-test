@@ -21,15 +21,15 @@ io.on('connection', socket => {
     });
 
     socket.on('offer', data => {
-        socket.to(data.channel).emit('offer', data);
+        socket.to(data.channel).emit('offer', { offer: data.offer, sender: socket.id });
     });
 
     socket.on('answer', data => {
-        socket.to(data.channel).emit('answer', data);
+        socket.to(data.channel).emit('answer', { answer: data.answer, sender: socket.id });
     });
 
     socket.on('candidate', data => {
-        socket.to(data.channel).emit('candidate', data);
+        socket.to(data.channel).emit('candidate', { candidate: data.candidate, sender: socket.id });
     });
 
     socket.on('disconnect', () => {
@@ -40,6 +40,7 @@ io.on('connection', socket => {
         }
     });
 });
+
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));

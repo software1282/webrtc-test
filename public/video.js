@@ -1,5 +1,5 @@
 const socket = io();
-let peerConnection;
+let peerConnections = {};
 let localStream;
 const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
@@ -17,39 +17,69 @@ function startVideoCall() {
         .then(stream => {
             document.getElementById('localVideo').srcObject = stream;
             localStream = stream;
-            peerConnection = new RTCPeerConnection(config);
-            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-            peerConnection.ontrack = event => document.getElementById('remoteVideo').srcObject = event.streams[0];
-            peerConnection.onicecandidate = event => {
-                if (event.candidate) {
-                    socket.emit('candidate', { candidate: event.candidate });
-                }
-            };
-            peerConnection.createOffer().then(offer => {
-                peerConnection.setLocalDescription(offer);
-                socket.emit('offer', { offer, channel: document.getElementById('currentVideoChannel').innerText });
+            socket.on('updateUsers', users => {
+                users.forEach(user => {
+                    if (user.id !== socket.id && !peerConnections[user.id]) {
+                        createPeerConnection(user.id);
+                    }
+                });
             });
         })
         .catch(error => console.error('Error accessing video devices.', error));
 }
 
+function createPeerConnection(remoteSocketId) {
+    let peerConnection = new RTCPeerConnection(config);
+    peerConnections[remoteSocketId] = peerConnection;
+
+    localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+    peerConnection.ontrack = event => {
+        let remoteVideo = document.createElement('video');
+        remoteVideo.id = `video-${remoteSocketId}`;
+        remoteVideo.autoplay = true;
+        remoteVideo.playsInline = true;
+        remoteVideo.srcObject = event.streams[0];
+        document.body.appendChild(remoteVideo);
+    };
+
+    peerConnection.onicecandidate = event => {
+        if (event.candidate) {
+            socket.emit('candidate', { candidate: event.candidate, channel: document.getElementById('currentVideoChannel').innerText });
+        }
+    };
+
+    peerConnection.createOffer().then(offer => {
+        peerConnection.setLocalDescription(offer);
+        socket.emit('offer', { offer, channel: document.getElementById('currentVideoChannel').innerText });
+    });
+}
+
 socket.on('offer', data => {
-    peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
-    peerConnection.createAnswer().then(answer => {
-        peerConnection.setLocalDescription(answer);
+    if (!peerConnections[data.sender]) {
+        createPeerConnection(data.sender);
+    }
+    peerConnections[data.sender].setRemoteDescription(new RTCSessionDescription(data.offer));
+    peerConnections[data.sender].createAnswer().then(answer => {
+        peerConnections[data.sender].setLocalDescription(answer);
         socket.emit('answer', { answer, channel: data.channel });
     });
 });
 
 socket.on('answer', data => {
-    peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+    if (peerConnections[data.sender]) {
+        peerConnections[data.sender].setRemoteDescription(new RTCSessionDescription(data.answer));
+    }
 });
 
 socket.on('candidate', data => {
-    peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+    if (peerConnections[data.sender]) {
+        peerConnections[data.sender].addIceCandidate(new RTCIceCandidate(data.candidate));
+    }
 });
 
 function leaveVideoCall() {
-    if (peerConnection) peerConnection.close();
+    Object.values(peerConnections).forEach(pc => pc.close());
+    peerConnections = {};
     window.location.href = '/';
 }
