@@ -29,6 +29,7 @@ io.on('connection', socket => {
     });
 
     socket.on('candidate', data => {
+        console.log('Received ICE candidate:', data.candidate);
         socket.to(data.target).emit('candidate', { candidate: data.candidate, sender: socket.id });
     });
 

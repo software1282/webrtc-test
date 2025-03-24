@@ -1,7 +1,13 @@
 const socket = io();
 let peerConnections = {};
 let localStream;
-const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+const config = {
+    iceServers: [
+        { urls: 'stun1.l.google.com:19302' },
+        { urls: 'stun2.l.google.com:19302' },
+        { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' }
+    ]
+};
 
 function joinVideoChannel() {
     const channelName = document.getElementById('channelName').value;
@@ -45,6 +51,7 @@ function createPeerConnection(remoteSocketId) {
 
     peerConnection.onicecandidate = event => {
         if (event.candidate) {
+            console.log('Sending ICE candidate:', event.candidate);
             socket.emit('candidate', { candidate: event.candidate, target: remoteSocketId });
         }
     };
@@ -73,6 +80,7 @@ socket.on('answer', data => {
 });
 
 socket.on('candidate', data => {
+    console.log('Received ICE candidate:', data.candidate);
     if (peerConnections[data.sender]) {
         peerConnections[data.sender].addIceCandidate(new RTCIceCandidate(data.candidate));
     }
