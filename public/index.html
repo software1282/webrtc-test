@@ -1,14 +1,14 @@
- 
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>WebRTC Audio Channels</title>
+    <title>WebRTC Audio & Video</title>
 </head>
 <body>
     <h2>Create or Join a Channel</h2>
     <input id="channelName" placeholder="Enter Channel Name">
     <input id="userId" placeholder="Enter Your Name">
     <button onclick="createOrJoinChannel()">Join</button>
+    <a href="video.html">Go to Video Chat</a>
     <div id="channel" style="display:none;">
         <h3>Channel: <span id="currentChannel"></span></h3>
         <p>Users in this Channel:</p>
@@ -20,4 +20,4 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script>
 </body>
-</html> 
+</html>
