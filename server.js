@@ -1,48 +1,36 @@
 const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
+const cors = require('cors');
+const path = require('path');
+const { RtcTokenBuilder, RtcRole } = require('agora-access-token');
+require('dotenv').config();
 
 const app = express();
-const server = http.createServer(app);
-const io = socketIo(server);
+app.use(cors());
+app.use(express.static('public')); // Serve frontend from /public
 
-app.use(express.static(__dirname + '/public'));
+const APP_ID = process.env.APP_ID;
+const APP_CERTIFICATE = process.env.APP_CERTIFICATE;
+const PORT = process.env.PORT || 5000;
 
-let channels = {};
+app.get('/token', (req, res) => {
+    const channelName = req.query.channel;
+    const uid = req.query.uid || 0;
+    const role = RtcRole.PUBLISHER;
+    const expirationTimeInSeconds = 3600;
+    const currentTime = Math.floor(Date.now() / 1000);
+    const privilegeExpiredTs = currentTime + expirationTimeInSeconds;
 
-io.on('connection', socket => {
-    console.log('User connected:', socket.id);
-    
-    socket.on('joinChannel', ({ channelName, userId }) => {
-        socket.join(channelName);
-        if (!channels[channelName]) channels[channelName] = [];
-        channels[channelName].push({ id: socket.id, userId });
-        io.to(channelName).emit('updateUsers', channels[channelName]);
-    });
+    if (!APP_ID || !APP_CERTIFICATE) {
+        return res.status(500).json({ error: "Missing Agora credentials" });
+    }
 
-    socket.on('offer', data => {
-        socket.to(data.target).emit('offer', { offer: data.offer, sender: socket.id });
-    });
-
-    socket.on('answer', data => {
-        socket.to(data.target).emit('answer', { answer: data.answer, sender: socket.id });
-    });
-
-    socket.on('candidate', data => {
-        console.log('Received ICE candidate:', data.candidate);
-        socket.to(data.target).emit('candidate', { candidate: data.candidate, sender: socket.id });
-    });
-
-    socket.on('disconnect', () => {
-        for (let channel in channels) {
-            channels[channel] = channels[channel].filter(user => user.id !== socket.id);
-            io.to(channel).emit('updateUsers', channels[channel]);
-            if (channels[channel].length === 0) delete channels[channel];
-        }
-    });
+    const token = RtcTokenBuilder.buildTokenWithUid(APP_ID, APP_CERTIFICATE, channelName, uid, role, privilegeExpiredTs);
+    res.json({ token });
 });
 
+// Serve index.html for any unknown route (for frontend)
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
