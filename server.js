@@ -21,15 +21,15 @@ io.on('connection', socket => {
     });
 
     socket.on('offer', data => {
-        socket.to(data.channel).emit('offer', { offer: data.offer, sender: socket.id });
+        socket.to(data.target).emit('offer', { offer: data.offer, sender: socket.id });
     });
 
     socket.on('answer', data => {
-        socket.to(data.channel).emit('answer', { answer: data.answer, sender: socket.id });
+        socket.to(data.target).emit('answer', { answer: data.answer, sender: socket.id });
     });
 
     socket.on('candidate', data => {
-        socket.to(data.channel).emit('candidate', { candidate: data.candidate, sender: socket.id });
+        socket.to(data.target).emit('candidate', { candidate: data.candidate, sender: socket.id });
     });
 
     socket.on('disconnect', () => {

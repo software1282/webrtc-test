@@ -40,18 +40,18 @@ function createPeerConnection(remoteSocketId) {
         remoteVideo.autoplay = true;
         remoteVideo.playsInline = true;
         remoteVideo.srcObject = event.streams[0];
-        document.body.appendChild(remoteVideo);
+        document.getElementById('remoteVideos').appendChild(remoteVideo);
     };
 
     peerConnection.onicecandidate = event => {
         if (event.candidate) {
-            socket.emit('candidate', { candidate: event.candidate, channel: document.getElementById('currentVideoChannel').innerText });
+            socket.emit('candidate', { candidate: event.candidate, target: remoteSocketId });
         }
     };
 
     peerConnection.createOffer().then(offer => {
         peerConnection.setLocalDescription(offer);
-        socket.emit('offer', { offer, channel: document.getElementById('currentVideoChannel').innerText });
+        socket.emit('offer', { offer, target: remoteSocketId });
     });
 }
 
@@ -62,7 +62,7 @@ socket.on('offer', data => {
     peerConnections[data.sender].setRemoteDescription(new RTCSessionDescription(data.offer));
     peerConnections[data.sender].createAnswer().then(answer => {
         peerConnections[data.sender].setLocalDescription(answer);
-        socket.emit('answer', { answer, channel: data.channel });
+        socket.emit('answer', { answer, target: data.sender });
     });
 });
 
