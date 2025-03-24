@@ -10,10 +10,10 @@
   "license": "ISC",
   "description": "Agora 1:1 Audio Call App with WebRTC",
   "dependencies": {
-    "express": "^4.21.2",
-    "socket.io": "^4.8.1",
+    "agora-token": "^2.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
-    "agora-access-token": "^3.2.2"
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1"
   }
 }
